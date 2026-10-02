@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Terminal Financiera - Access Secure</title>
+  <title>Terminal Financiera - Advanced Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -56,7 +56,6 @@
       pointer-events: none;
     }
 
-    /* LOGIN OVERLAY */
     #login-overlay {
       position: fixed;
       top: 0;
@@ -378,7 +377,7 @@
       display: flex;
       flex-direction: column;
       gap: 3px;
-      max-width: 65%;
+      max-width: 60%;
     }
 
     .item-title {
@@ -408,6 +407,15 @@
       font-size: 0.65rem;
     }
 
+    .tag-override {
+      background: rgba(0, 229, 255, 0.2);
+      color: var(--blue-cyber);
+      border: 1px solid var(--blue-cyber);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 0.65rem;
+    }
+
     .tag-credit {
       background: rgba(217, 70, 239, 0.2);
       color: var(--purple-credit);
@@ -415,6 +423,12 @@
       padding: 1px 4px;
       border-radius: 3px;
       font-size: 0.65rem;
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .item-amount-col {
@@ -426,20 +440,22 @@
       font-weight: 700;
     }
 
-    .btn-delete {
+    .btn-icon-sub {
       background: none;
       border: none;
-      color: var(--red-alert);
-      font-size: 0.9rem;
-      margin-left: 10px;
+      font-size: 0.95rem;
       cursor: pointer;
-      opacity: 0.6;
+      opacity: 0.7;
       padding: 4px;
+      transition: opacity 0.2s;
     }
 
-    .btn-delete:hover, .btn-delete:active {
+    .btn-icon-sub:hover, .btn-icon-sub:active {
       opacity: 1;
     }
+
+    .btn-edit { color: var(--blue-cyber); }
+    .btn-delete { color: var(--red-alert); }
 
     .modal-overlay {
       position: fixed;
@@ -579,6 +595,19 @@
       display: block;
     }
 
+    .recurring-scope-panel {
+      background: rgba(255, 204, 0, 0.08);
+      border: 1px solid var(--amber-warn);
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .recurring-scope-panel.active {
+      display: block;
+    }
+
     .checkbox-group {
       display: flex;
       align-items: center;
@@ -655,7 +684,7 @@
   <!-- LOGIN LOCK SCREEN -->
   <div id="login-overlay">
     <div class="login-box">
-      <div class="login-title">🔐 ACCESO RESTRENGIDO</div>
+      <div class="login-title">🔐 ACCESO RESTRINGIDO</div>
       <div class="login-sub">&gt; Ingrese credenciales de autorización</div>
       
       <form onsubmit="handleLogin(event)">
@@ -775,6 +804,7 @@
       </div>
 
       <form id="transaction-form" onsubmit="handleFormSubmit(event)">
+        <input type="hidden" id="form-edit-id" value="">
         <input type="hidden" id="form-type" value="ingreso">
         <input type="hidden" id="form-payment-method" value="contado">
 
@@ -836,13 +866,27 @@
           <label for="form-recurring">🔁 REPETIR TODOS LOS MESES (Recurrente)</label>
         </div>
 
+        <!-- PANEL AL EDITAR UN RECURRENTE -->
+        <div class="recurring-scope-panel" id="recurring-scope-panel">
+          <label class="form-label" style="color: var(--amber-warn);">🔁 ¿CÓMO DESEAS APLICAR LOS CAMBIOS?</label>
+          <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+            <label style="font-size: 0.75rem; color: var(--text-bright); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+              <input type="radio" name="edit-scope" value="single" checked accent-color="var(--amber-warn)">
+              <span>Solo en este mes (<strong id="scope-current-month"></strong>)</span>
+            </label>
+            <label style="font-size: 0.75rem; color: var(--text-bright); cursor: pointer; display: flex; align-items: center; gap: 6px;">
+              <input type="radio" name="edit-scope" value="future" accent-color="var(--amber-warn)">
+              <span>En este mes y todos los meses futuros (Los anteriores no cambian)</span>
+            </label>
+          </div>
+        </div>
+
         <button type="submit" class="btn-submit" id="modal-submit-btn">GUARDAR REGISTRO</button>
       </form>
     </div>
   </div>
 
   <script>
-    /* Credenciales configuradas */
     const USER_CORRECTO = "salvarredimartin@gmail.com";
     const PASS_CORRECTA = "Martin88";
 
@@ -873,7 +917,6 @@
       checkAuth();
     }
 
-    // Inicializar comprobación de autenticación
     checkAuth();
 
     const canvas = document.getElementById('matrix-canvas');
@@ -911,6 +954,7 @@
     setInterval(drawMatrix, 50);
 
     let transactions = JSON.parse(localStorage.getItem('terminal_fin_txs')) || [];
+    let overrides = JSON.parse(localStorage.getItem('terminal_fin_overrides')) || [];
     
     const now = new Date();
     let currentYear = now.getFullYear();
@@ -920,6 +964,10 @@
       'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
       'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
     ];
+
+    function getMonthKey(year, month) {
+      return `${year}-${String(month + 1).padStart(2, '0')}`;
+    }
 
     function updateMonthDisplay() {
       document.getElementById('current-month-text').innerText = `${monthNames[currentMonth]} ${currentYear}`;
@@ -957,9 +1005,11 @@
 
     function getExpandedTransactionsForSelectedMonth() {
       let result = [];
+      const activeMonthKey = getMonthKey(currentYear, currentMonth);
 
       transactions.forEach(tx => {
         if (!tx.recurring && tx.paymentMethod !== 'tarjeta') {
+          // Gasto/Ingreso normal
           const d = new Date(tx.date + 'T00:00:00');
           if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
             result.push({
@@ -970,19 +1020,36 @@
             });
           }
         } else if (tx.recurring) {
+          // Recurrente: Verificar si aplica al mes actual
           const txDate = new Date(tx.date + 'T00:00:00');
           const startKey = txDate.getFullYear() * 12 + txDate.getMonth();
           const selectedKey = currentYear * 12 + currentMonth;
 
+          // Si el mes seleccionado es posterior o igual a la fecha de inicio del recurrente
           if (selectedKey >= startKey) {
-            result.push({
-              ...tx,
-              displayAmount: tx.amount,
-              displayDesc: tx.desc,
-              displayDetail: `🔁 Recurrente (Desde ${tx.date})`
-            });
+            // Verificar si hay una excepción/override para este mes específico
+            const ov = overrides.find(o => o.txId === tx.id && o.monthKey === activeMonthKey);
+
+            if (ov) {
+              result.push({
+                ...tx,
+                displayAmount: ov.amount,
+                displayDesc: ov.desc,
+                displayCategory: ov.category,
+                displayDetail: `🔁 Modificado este mes`,
+                isOverride: true
+              });
+            } else {
+              result.push({
+                ...tx,
+                displayAmount: tx.amount,
+                displayDesc: tx.desc,
+                displayDetail: `🔁 Recurrente (Fijo)`
+              });
+            }
           }
         } else if (tx.paymentMethod === 'tarjeta') {
+          // Tarjeta de crédito
           const purchaseDate = new Date(tx.date + 'T00:00:00');
           const purchaseMonthKey = purchaseDate.getFullYear() * 12 + purchaseDate.getMonth();
           const selectedMonthKey = currentYear * 12 + currentMonth;
@@ -1058,14 +1125,15 @@
             <div class="item-details">
               <span>${tx.displayDetail}</span>
               ${tx.paymentMethod === 'tarjeta' ? `<span class="tag-credit">💳 TARJETA</span>` : ''}
-              ${tx.recurring ? `<span class="tag-recurring">🔁 RECURRENTE</span>` : ''}
+              ${tx.recurring ? (tx.isOverride ? `<span class="tag-override">✏️ AJUSTADO</span>` : `<span class="tag-recurring">🔁 RECURRENTE</span>`) : ''}
             </div>
           </div>
-          <div style="display: flex; align-items: center;">
+          <div class="item-actions">
             <div class="item-amount-col">
               <div class="item-amount ${colorClass}">${sign} ${formatMoney(tx.displayAmount)}</div>
             </div>
-            <button class="btn-delete" onclick="deleteTransaction('${tx.id}')" title="Eliminar este gasto completo">&times;</button>
+            <button class="btn-icon-sub btn-edit" onclick="editTransaction('${tx.id}')" title="Editar registro">✏️</button>
+            <button class="btn-icon-sub btn-delete" onclick="deleteTransaction('${tx.id}')" title="Eliminar registro">&times;</button>
           </div>
         `;
         listEl.appendChild(card);
@@ -1093,9 +1161,10 @@
             <div class="item-title">${escapeHtml(tx.desc)} <span class="tag-recurring">FIJO MENSUAL</span></div>
             <div class="item-details">Desde ${tx.date} • ${escapeHtml(tx.category || 'General')}</div>
           </div>
-          <div style="display: flex; align-items: center;">
+          <div class="item-actions">
             <div class="item-amount ${colorClass}">${formatMoney(tx.amount)}</div>
-            <button class="btn-delete" onclick="deleteTransaction('${tx.id}')">&times;</button>
+            <button class="btn-icon-sub btn-edit" onclick="editTransaction('${tx.id}')" title="Editar base">✏️</button>
+            <button class="btn-icon-sub btn-delete" onclick="deleteTransaction('${tx.id}')" title="Eliminar recurrente">&times;</button>
           </div>
         `;
         listEl.appendChild(card);
@@ -1141,36 +1210,39 @@
 
     document.getElementById('form-amount').addEventListener('input', updateInstallmentPreview);
 
-    function openModal(type) {
-      document.getElementById('form-type').value = type;
+    function openModal(type, editId = null) {
       document.getElementById('transaction-form').reset();
-
-      const defaultDate = new Date();
-      const yyyy = currentYear;
-      const mm = String(currentMonth + 1).padStart(2, '0');
-      const dd = String(Math.min(defaultDate.getDate(), 28)).padStart(2, '0');
-      document.getElementById('form-date').value = `${yyyy}-${mm}-${dd}`;
+      document.getElementById('form-edit-id').value = editId || '';
+      document.getElementById('recurring-scope-panel').classList.remove('active');
 
       const titleEl = document.getElementById('modal-title-text');
       const submitBtn = document.getElementById('modal-submit-btn');
       const paymentGroup = document.getElementById('payment-method-group');
 
-      selectPaymentMethod('contado');
+      if (!editId) {
+        // MODO CREACIÓN
+        document.getElementById('form-type').value = type;
+        const defaultDate = new Date();
+        const yyyy = currentYear;
+        const mm = String(currentMonth + 1).padStart(2, '0');
+        const dd = String(Math.min(defaultDate.getDate(), 28)).padStart(2, '0');
+        document.getElementById('form-date').value = `${yyyy}-${mm}-${dd}`;
+        selectPaymentMethod('contado');
 
-      if (type === 'egreso') {
-        paymentGroup.style.display = 'block';
-        titleEl.innerText = '🔻 REGISTRAR EGRESO';
-        titleEl.style.color = 'var(--red-alert)';
-        submitBtn.style.background = 'var(--red-alert)';
-        submitBtn.style.color = '#fff';
-      } else {
-        paymentGroup.style.display = 'none';
-        if (type === 'ingreso') {
+        if (type === 'egreso') {
+          paymentGroup.style.display = 'block';
+          titleEl.innerText = '🔻 REGISTRAR EGRESO';
+          titleEl.style.color = 'var(--red-alert)';
+          submitBtn.style.background = 'var(--red-alert)';
+          submitBtn.style.color = '#fff';
+        } else if (type === 'ingreso') {
+          paymentGroup.style.display = 'none';
           titleEl.innerText = '⚡ REGISTRAR INGRESO';
           titleEl.style.color = 'var(--text-green)';
           submitBtn.style.background = 'var(--text-green)';
           submitBtn.style.color = '#000';
         } else {
+          paymentGroup.style.display = 'none';
           titleEl.innerText = '💎 REGISTRAR INVERSIÓN';
           titleEl.style.color = 'var(--blue-cyber)';
           submitBtn.style.background = 'var(--blue-cyber)';
@@ -1181,6 +1253,52 @@
       document.getElementById('modal-overlay').classList.add('open');
     }
 
+    function editTransaction(id) {
+      const tx = transactions.find(t => t.id === id);
+      if (!tx) return;
+
+      openModal(tx.type, id);
+
+      const titleEl = document.getElementById('modal-title-text');
+      titleEl.innerText = '✏️ EDITAR REGISTRO';
+      titleEl.style.color = 'var(--blue-cyber)';
+
+      document.getElementById('form-type').value = tx.type;
+      document.getElementById('form-desc').value = tx.desc;
+      document.getElementById('form-category').value = tx.category || 'General';
+      document.getElementById('form-date').value = tx.date;
+      document.getElementById('form-recurring').checked = !!tx.recurring;
+
+      if (tx.type === 'egreso') {
+        document.getElementById('payment-method-group').style.display = 'block';
+        selectPaymentMethod(tx.paymentMethod || 'contado');
+        if (tx.paymentMethod === 'tarjeta') {
+          document.getElementById('form-amount').value = tx.amount;
+          document.getElementById('form-installments').value = tx.installments || 1;
+          updateInstallmentPreview();
+        } else {
+          document.getElementById('form-amount').value = tx.amount;
+        }
+      } else {
+        document.getElementById('payment-method-group').style.display = 'none';
+        document.getElementById('form-amount').value = tx.amount;
+      }
+
+      // Si es recurrente, mostrar opciones de alcance (solo este mes o de aquí en adelante)
+      if (tx.recurring) {
+        const activeMonthKey = getMonthKey(currentYear, currentMonth);
+        const ov = overrides.find(o => o.txId === id && o.monthKey === activeMonthKey);
+        if (ov) {
+          document.getElementById('form-amount').value = ov.amount;
+          document.getElementById('form-desc').value = ov.desc;
+          document.getElementById('form-category').value = ov.category;
+        }
+
+        document.getElementById('scope-current-month').innerText = `${monthNames[currentMonth]} ${currentYear}`;
+        document.getElementById('recurring-scope-panel').classList.add('active');
+      }
+    }
+
     function closeModal() {
       document.getElementById('modal-overlay').classList.remove('open');
     }
@@ -1188,6 +1306,7 @@
     function handleFormSubmit(e) {
       e.preventDefault();
 
+      const editId = document.getElementById('form-edit-id').value;
       const type = document.getElementById('form-type').value;
       const paymentMethod = document.getElementById('form-payment-method').value;
       const amount = parseFloat(document.getElementById('form-amount').value);
@@ -1202,34 +1321,95 @@
         return;
       }
 
-      const newTx = {
-        id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-        type,
-        paymentMethod: type === 'egreso' ? paymentMethod : 'contado',
-        amount,
-        desc,
-        category,
-        date,
-        recurring,
-        installments: paymentMethod === 'tarjeta' ? installments : 1
-      };
+      if (editId) {
+        // EDICIÓN
+        const tx = transactions.find(t => t.id === editId);
+        if (tx) {
+          if (tx.recurring) {
+            const scope = document.querySelector('input[name="edit-scope"]:checked').value;
+            const activeMonthKey = getMonthKey(currentYear, currentMonth);
 
-      transactions.push(newTx);
+            if (scope === 'single') {
+              // 1. SOLO ESTE MES: Guardar excepción en overrides
+              overrides = overrides.filter(o => !(o.txId === editId && o.monthKey === activeMonthKey));
+              overrides.push({
+                txId: editId,
+                monthKey: activeMonthKey,
+                amount,
+                desc,
+                category
+              });
+            } else {
+              // 2. DE AQUÍ EN ADELANTE: Actualizar registro base y limpiar excepciones futuras
+              tx.amount = amount;
+              tx.desc = desc;
+              tx.category = category;
+              // Limpiar overrides desde el mes actual en adelante para que tome el nuevo valor base
+              const currentMonthVal = currentYear * 12 + currentMonth;
+              overrides = overrides.filter(o => {
+                if (o.txId !== editId) return true;
+                const [y, m] = o.monthKey.split('-').map(Number);
+                const ovMonthVal = y * 12 + (m - 1);
+                return ovMonthVal < currentMonthVal; // Conservar solo pasados
+              });
+            }
+          } else {
+            // Edición normal
+            tx.amount = amount;
+            tx.desc = desc;
+            tx.category = category;
+            tx.date = date;
+            tx.recurring = recurring;
+            tx.paymentMethod = type === 'egreso' ? paymentMethod : 'contado';
+            tx.installments = paymentMethod === 'tarjeta' ? installments : 1;
+          }
+        }
+      } else {
+        // NUEVO REGISTRO
+        const newTx = {
+          id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          type,
+          paymentMethod: type === 'egreso' ? paymentMethod : 'contado',
+          amount,
+          desc,
+          category,
+          date,
+          recurring,
+          installments: paymentMethod === 'tarjeta' ? installments : 1
+        };
+        transactions.push(newTx);
+      }
+
       saveData();
       closeModal();
       renderDashboard();
     }
 
     function deleteTransaction(id) {
-      if (confirm('¿Eliminar este registro y todas sus cuotas/repeticiones asociadas?')) {
-        transactions = transactions.filter(t => t.id !== id);
-        saveData();
-        renderDashboard();
+      const tx = transactions.find(t => t.id === id);
+      if (!tx) return;
+
+      if (tx.recurring) {
+        if (confirm('¿Eliminar este registro recurrente?
+
+- Se borrará este gasto/ingreso fijo de todos los meses.')) {
+          transactions = transactions.filter(t => t.id !== id);
+          overrides = overrides.filter(o => o.txId !== id);
+          saveData();
+          renderDashboard();
+        }
+      } else {
+        if (confirm('¿Eliminar este registro?')) {
+          transactions = transactions.filter(t => t.id !== id);
+          saveData();
+          renderDashboard();
+        }
       }
     }
 
     function saveData() {
       localStorage.setItem('terminal_fin_txs', JSON.stringify(transactions));
+      localStorage.setItem('terminal_fin_overrides', JSON.stringify(overrides));
     }
 
     function switchTab(tabId) {
@@ -1241,7 +1421,11 @@
     }
 
     function exportData() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(transactions, null, 2));
+      const backupData = {
+        transactions,
+        overrides
+      };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
       downloadAnchor.setAttribute("download", `terminal_fin_backup_${new Date().toISOString().slice(0,10)}.json`);
@@ -1263,10 +1447,14 @@
             const content = JSON.parse(readerEvent.target.result);
             if (Array.isArray(content)) {
               transactions = content;
-              saveData();
-              renderDashboard();
-              alert('¡Datos importados con éxito!');
+              overrides = [];
+            } else if (content.transactions) {
+              transactions = content.transactions || [];
+              overrides = content.overrides || [];
             }
+            saveData();
+            renderDashboard();
+            alert('¡Datos importados con éxito!');
           } catch (err) {
             alert('Error al leer el archivo de copia de seguridad.');
           }
@@ -1278,6 +1466,7 @@
     function clearData() {
       if (confirm('⚠️ ¿ATENCIÓN: Estás seguro de borrar todos tus registros? Esta acción no se puede deshacer.')) {
         transactions = [];
+        overrides = [];
         saveData();
         renderDashboard();
       }
