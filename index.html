@@ -866,7 +866,6 @@
           <label for="form-recurring">🔁 REPETIR TODOS LOS MESES (Recurrente)</label>
         </div>
 
-        <!-- PANEL AL EDITAR UN RECURRENTE -->
         <div class="recurring-scope-panel" id="recurring-scope-panel">
           <label class="form-label" style="color: var(--amber-warn);">🔁 ¿CÓMO DESEAS APLICAR LOS CAMBIOS?</label>
           <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
@@ -1009,7 +1008,6 @@
 
       transactions.forEach(tx => {
         if (!tx.recurring && tx.paymentMethod !== 'tarjeta') {
-          // Gasto/Ingreso normal
           const d = new Date(tx.date + 'T00:00:00');
           if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
             result.push({
@@ -1020,14 +1018,11 @@
             });
           }
         } else if (tx.recurring) {
-          // Recurrente: Verificar si aplica al mes actual
           const txDate = new Date(tx.date + 'T00:00:00');
           const startKey = txDate.getFullYear() * 12 + txDate.getMonth();
           const selectedKey = currentYear * 12 + currentMonth;
 
-          // Si el mes seleccionado es posterior o igual a la fecha de inicio del recurrente
           if (selectedKey >= startKey) {
-            // Verificar si hay una excepción/override para este mes específico
             const ov = overrides.find(o => o.txId === tx.id && o.monthKey === activeMonthKey);
 
             if (ov) {
@@ -1049,7 +1044,6 @@
             }
           }
         } else if (tx.paymentMethod === 'tarjeta') {
-          // Tarjeta de crédito
           const purchaseDate = new Date(tx.date + 'T00:00:00');
           const purchaseMonthKey = purchaseDate.getFullYear() * 12 + purchaseDate.getMonth();
           const selectedMonthKey = currentYear * 12 + currentMonth;
@@ -1220,7 +1214,6 @@
       const paymentGroup = document.getElementById('payment-method-group');
 
       if (!editId) {
-        // MODO CREACIÓN
         document.getElementById('form-type').value = type;
         const defaultDate = new Date();
         const yyyy = currentYear;
@@ -1284,7 +1277,6 @@
         document.getElementById('form-amount').value = tx.amount;
       }
 
-      // Si es recurrente, mostrar opciones de alcance (solo este mes o de aquí en adelante)
       if (tx.recurring) {
         const activeMonthKey = getMonthKey(currentYear, currentMonth);
         const ov = overrides.find(o => o.txId === id && o.monthKey === activeMonthKey);
@@ -1322,7 +1314,6 @@
       }
 
       if (editId) {
-        // EDICIÓN
         const tx = transactions.find(t => t.id === editId);
         if (tx) {
           if (tx.recurring) {
@@ -1330,7 +1321,6 @@
             const activeMonthKey = getMonthKey(currentYear, currentMonth);
 
             if (scope === 'single') {
-              // 1. SOLO ESTE MES: Guardar excepción en overrides
               overrides = overrides.filter(o => !(o.txId === editId && o.monthKey === activeMonthKey));
               overrides.push({
                 txId: editId,
@@ -1340,21 +1330,18 @@
                 category
               });
             } else {
-              // 2. DE AQUÍ EN ADELANTE: Actualizar registro base y limpiar excepciones futuras
               tx.amount = amount;
               tx.desc = desc;
               tx.category = category;
-              // Limpiar overrides desde el mes actual en adelante para que tome el nuevo valor base
               const currentMonthVal = currentYear * 12 + currentMonth;
               overrides = overrides.filter(o => {
                 if (o.txId !== editId) return true;
                 const [y, m] = o.monthKey.split('-').map(Number);
                 const ovMonthVal = y * 12 + (m - 1);
-                return ovMonthVal < currentMonthVal; // Conservar solo pasados
+                return ovMonthVal < currentMonthVal;
               });
             }
           } else {
-            // Edición normal
             tx.amount = amount;
             tx.desc = desc;
             tx.category = category;
@@ -1365,7 +1352,6 @@
           }
         }
       } else {
-        // NUEVO REGISTRO
         const newTx = {
           id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
           type,
@@ -1390,9 +1376,7 @@
       if (!tx) return;
 
       if (tx.recurring) {
-        if (confirm('¿Eliminar este registro recurrente?
-
-- Se borrará este gasto/ingreso fijo de todos los meses.')) {
+        if (confirm('¿Eliminar este registro recurrente?\n\n- Se borrará este gasto/ingreso fijo de todos los meses.')) {
           transactions = transactions.filter(t => t.id !== id);
           overrides = overrides.filter(o => o.txId !== id);
           saveData();
