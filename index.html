@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Terminal Financiera - Access Secure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #050807;
+      --card-bg: rgba(10, 20, 15, 0.85);
+      --border-color: #00ff66;
+      --glow-color: rgba(0, 255, 102, 0.25);
+      --text-green: #00ff66;
+      --text-bright: #66ffa3;
+      --text-dim: #00993d;
+      --red-alert: #ff3366;
+      --red-glow: rgba(255, 51, 102, 0.2);
+      --blue-cyber: #00e5ff;
+      --blue-glow: rgba(0, 229, 255, 0.2);
+      --amber-warn: #ffcc00;
+      --purple-credit: #d946ef;
+      --purple-glow: rgba(217, 70, 239, 0.25);
+      --font-mono: 'Fira Code', monospace, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-mono);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-green);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+      padding-bottom: 80px;
+    }
+
+    #matrix-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+
+    /* LOGIN OVERLAY */
+    #login-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(5, 8, 7, 0.96);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 0 25px var(--glow-color);
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .login-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-bright);
+      letter-spacing: 1px;
+    }
+
+    .login-sub {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+
+    .login-error {
+      color: var(--red-alert);
+      font-size: 0.75rem;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 0 10px var(--glow-color);
+      border-radius: 8px;
+      margin-bottom: 16px;
+      backdrop-filter: blur(5px);
+    }
+
+    .brand {
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-dot {
+      width: 10px;
+      height: 10px;
+      background-color: var(--text-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--text-green);
+      animation: blink 1.5s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .status-badge {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      border: 1px solid var(--text-dim);
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    .month-selector-card {
+      background: var(--card-bg);
+      border: 1px solid var(--text-dim);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 0 8px rgba(0, 255, 102, 0.1);
+    }
+
+    .month-btn {
+      background: rgba(0, 255, 102, 0.1);
+      border: 1px solid var(--text-green);
+      color: var(--text-green);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .month-btn:active {
+      background: var(--text-green);
+      color: #000;
+      box-shadow: 0 0 10px var(--text-green);
+    }
+
+    .month-display {
+      text-align: center;
+    }
+
+    .month-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      text-transform: uppercase;
+    }
+
+    .month-subtitle {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    .balance-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 0 15px var(--glow-color);
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .balance-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--text-green), transparent);
+      animation: scanline 3s linear infinite;
+    }
+
+    @keyframes scanline {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    .balance-label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .balance-amount {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      text-shadow: 0 0 10px var(--glow-color);
+      margin-bottom: 16px;
+      word-break: break-word;
+    }
+
+    .balance-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--text-dim);
+    }
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .summary-title {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+
+    .summary-val {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    .val-ingreso { color: var(--text-green); }
+    .val-egreso { color: var(--red-alert); }
+    .val-inversion { color: var(--blue-cyber); }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .btn-action {
+      padding: 14px 8px;
+      border-radius: 10px;
+      border: 1px solid;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.8rem;
+      transition: transform 0.1s, box-shadow 0.2s;
+      text-align: center;
+    }
+
+    .btn-action:active {
+      transform: scale(0.96);
+    }
+
+    .btn-ingreso {
+      border-color: var(--text-green);
+      color: var(--text-green);
+      box-shadow: 0 0 8px var(--glow-color);
+    }
+
+    .btn-egreso {
+      border-color: var(--red-alert);
+      color: var(--red-alert);
+      box-shadow: 0 0 8px var(--red-glow);
+    }
+
+    .btn-inversion {
+      border-color: var(--blue-cyber);
+      color: var(--blue-cyber);
+      box-shadow: 0 0 8px var(--blue-glow);
+    }
+
+    .btn-icon {
+      font-size: 1.4rem;
+    }
+
+    .nav-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-align: center;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab-btn.active {
+      color: var(--text-bright);
+      border-bottom: 2px solid var(--text-green);
+      text-shadow: 0 0 8px var(--glow-color);
+    }
+
+    .section-content {
+      display: none;
+    }
+    .section-content.active {
+      display: block;
+    }
+
+    .item-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(0, 255, 102, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+    }
+
+    .item-card.type-ingreso { border-left: 4px solid var(--text-green); }
+    .item-card.type-egreso { border-left: 4px solid var(--red-alert); }
+    .item-card.type-inversion { border-left: 4px solid var(--blue-cyber); }
+
+    .item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-width: 65%;
+    }
+
+    .item-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .item-details {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .tag-recurring {
+      background: rgba(255, 204, 0, 0.2);
+      color: var(--amber-warn);
+      border: 1px solid var(--amber-warn);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 0.65rem;
+    }
+
+    .tag-credit {
+      background: rgba(217, 70, 239, 0.2);
+      color: var(--purple-credit);
+      border: 1px solid var(--purple-credit);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 0.65rem;
+    }
+
+    .item-amount-col {
+      text-align: right;
+    }
+
+    .item-amount {
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .btn-delete {
+      background: none;
+      border: none;
+      color: var(--red-alert);
+      font-size: 0.9rem;
+      margin-left: 10px;
+      cursor: pointer;
+      opacity: 0.6;
+      padding: 4px;
+    }
+
+    .btn-delete:hover, .btn-delete:active {
+      opacity: 1;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      z-index: 99;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-container {
+      background: #09120d;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 -5px 25px var(--glow-color);
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      width: 100%;
+      max-width: 500px;
+      padding: 20px;
+      transform: translateY(100%);
+      transition: transform 0.25s ease;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.open .modal-container {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--text-dim);
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+      text-align: left;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      background: #020503;
+      border: 1px solid var(--text-dim);
+      color: var(--text-green);
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    .form-input:focus, .form-select:focus {
+      border-color: var(--text-green);
+      box-shadow: 0 0 8px var(--glow-color);
+    }
+
+    .payment-method-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .pay-btn {
+      padding: 10px;
+      border: 1px solid var(--text-dim);
+      background: rgba(0, 0, 0, 0.4);
+      color: var(--text-dim);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .pay-btn.selected-contado {
+      border-color: var(--text-green);
+      color: var(--text-green);
+      background: rgba(0, 255, 102, 0.1);
+      box-shadow: 0 0 6px var(--glow-color);
+    }
+
+    .pay-btn.selected-tarjeta {
+      border-color: var(--purple-credit);
+      color: var(--purple-credit);
+      background: rgba(217, 70, 239, 0.15);
+      box-shadow: 0 0 8px var(--purple-glow);
+    }
+
+    .credit-options-panel {
+      background: rgba(217, 70, 239, 0.05);
+      border: 1px solid var(--purple-credit);
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .credit-options-panel.active {
+      display: block;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 255, 102, 0.05);
+      border: 1px solid rgba(0, 255, 102, 0.2);
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 8px;
+    }
+
+    .checkbox-group input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--text-green);
+    }
+
+    .checkbox-group label {
+      font-size: 0.8rem;
+      color: var(--text-bright);
+      cursor: pointer;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 10px;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      border: 1px dashed var(--text-dim);
+      border-radius: 8px;
+    }
+
+    .config-card {
+      background: var(--card-bg);
+      border: 1px solid var(--text-dim);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .config-btn {
+      width: 100%;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--text-dim);
+      color: var(--text-bright);
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 8px;
+      font-size: 0.8rem;
+    }
+
+    .config-btn-danger {
+      border-color: var(--red-alert);
+      color: var(--red-alert);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN LOCK SCREEN -->
+  <div id="login-overlay">
+    <div class="login-box">
+      <div class="login-title">🔐 ACCESO RESTRENGIDO</div>
+      <div class="login-sub">&gt; Ingrese credenciales de autorización</div>
+      
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">USUARIO</label>
+          <input type="text" id="login-user" class="form-input" placeholder="Usuario" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CONTRASEÑA</label>
+          <input type="password" id="login-pass" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        
+        <div id="login-error" class="login-error">⚠️ USUARIO O CONTRASEÑA INCORRECTOS</div>
+
+        <button type="submit" class="btn-submit" style="background: var(--text-green); color: #000; margin-top: 16px;">INGRESAR AL SISTEMA</button>
+      </form>
+    </div>
+  </div>
+
+  <canvas id="matrix-canvas"></canvas>
+
+  <div class="container">
+    
+    <header>
+      <div class="brand">
+        <div class="brand-dot"></div>
+        <span>[TERMINAL.FIN]</span>
+      </div>
+      <button onclick="logout()" class="status-badge" style="cursor:pointer; background:rgba(255,51,102,0.1); border-color:var(--red-alert); color:var(--red-alert);">SALIR 🔒</button>
+    </header>
+
+    <div class="month-selector-card">
+      <button class="month-btn" onclick="changeMonth(-1)">&lt; ANT</button>
+      <div class="month-display">
+        <div class="month-title" id="current-month-text">OCTUBRE 2026</div>
+        <div class="month-subtitle" id="month-status-tag">MES EN CURSO</div>
+      </div>
+      <button class="month-btn" onclick="changeMonth(1)">SIG &gt;</button>
+    </div>
+
+    <div class="balance-card">
+      <div class="balance-label">&gt; DISPONIBLE DEL MES</div>
+      <div class="balance-amount" id="display-disponible">$0,00</div>
+
+      <div class="balance-summary">
+        <div class="summary-item">
+          <span class="summary-title">+ INGRESOS</span>
+          <span class="summary-val val-ingreso" id="display-ingresos">$0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-title">- EGRESOS</span>
+          <span class="summary-val val-egreso" id="display-egresos">$0</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-title">📈 INVERSIÓN</span>
+          <span class="summary-val val-inversion" id="display-inversiones">$0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="action-grid">
+      <button class="btn-action btn-ingreso" onclick="openModal('ingreso')">
+        <span class="btn-icon">⚡</span>
+        <span>REGISTRAR INGRESO</span>
+      </button>
+
+      <button class="btn-action btn-egreso" onclick="openModal('egreso')">
+        <span class="btn-icon">🔻</span>
+        <span>REGISTRAR EGRESO</span>
+      </button>
+
+      <button class="btn-action btn-inversion" onclick="openModal('inversion')">
+        <span class="btn-icon">💎</span>
+        <span>REGISTRAR INVERSIÓN</span>
+      </button>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('historial')">HISTORIAL DEL MES</button>
+      <button class="tab-btn" onclick="switchTab('recurrentes')">FIJOS / RECURRENTES</button>
+      <button class="tab-btn" onclick="switchTab('ajustes')">OPCIONES</button>
+    </div>
+
+    <div id="tab-historial" class="section-content active">
+      <div id="transactions-list"></div>
+    </div>
+
+    <div id="tab-recurrentes" class="section-content">
+      <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 12px;">
+        &gt; Los ítems marcados como **recurrentes** (ej: Alquiler, Sueldo, Subscripciones) aparecen automáticamente todos los meses sin necesidad de volver a cargarlos.
+      </p>
+      <div id="recurring-list"></div>
+    </div>
+
+    <div id="tab-ajustes" class="section-content">
+      <div class="config-card">
+        <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">COPIA DE SEGURIDAD</div>
+        <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px;">Exporta o restaura tus registros financieros en un archivo local.</p>
+        <button class="config-btn" onclick="exportData()">&gt; EXPORTAR DATOS (JSON)</button>
+        <button class="config-btn" onclick="importData()">&gt; IMPORTAR DATOS</button>
+      </div>
+
+      <div class="config-card">
+        <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; color: var(--red-alert);">ZONA DE REINICIO</div>
+        <p style="font-size: 0.7rem; color: var(--text-dim); margin-bottom: 10px;">Borra todos los registros guardados en la memoria del dispositivo.</p>
+        <button class="config-btn config-btn-danger" onclick="clearData()">&gt; RESETEAR TODOS LOS DATOS</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title-text">&gt; NUEVO REGISTRO</div>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+
+      <form id="transaction-form" onsubmit="handleFormSubmit(event)">
+        <input type="hidden" id="form-type" value="ingreso">
+        <input type="hidden" id="form-payment-method" value="contado">
+
+        <div class="form-group" id="payment-method-group" style="display: none;">
+          <label class="form-label">Medio de Pago</label>
+          <div class="payment-method-selector">
+            <button type="button" class="pay-btn selected-contado" id="btn-pay-contado" onclick="selectPaymentMethod('contado')">💵 CONTADO / DEBITO<br><span style="font-size:0.65rem; opacity:0.8;">(Mes Actual)</span></button>
+            <button type="button" class="pay-btn" id="btn-pay-tarjeta" onclick="selectPaymentMethod('tarjeta')">💳 TARJETA CRÉDITO<br><span style="font-size:0.65rem; opacity:0.8;">(Mes Siguiente)</span></button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" id="label-amount">Monto ($)</label>
+          <input type="number" step="0.01" id="form-amount" class="form-input" placeholder="0.00" required autofocus>
+        </div>
+
+        <div class="credit-options-panel" id="credit-options-panel">
+          <div class="form-group">
+            <label class="form-label" style="color: var(--purple-credit);">Cantidad de Cuotas</label>
+            <select id="form-installments" class="form-select" onchange="updateInstallmentPreview()">
+              <option value="1">1 Cuota (Se paga el mes que viene)</option>
+              <option value="3">3 Cuotas</option>
+              <option value="6">6 Cuotas</option>
+              <option value="9">9 Cuotas</option>
+              <option value="12">12 Cuotas</option>
+              <option value="18">18 Cuotas</option>
+              <option value="24">24 Cuotas</option>
+            </select>
+          </div>
+          <div id="installment-preview" style="font-size: 0.75rem; color: var(--purple-credit); font-weight: 600;"></div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Concepto / Descripción</label>
+          <input type="text" id="form-desc" class="form-input" placeholder="ej: Alquiler, Zapatillas, Supermercado..." required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Categoría</label>
+          <select id="form-category" class="form-select">
+            <option value="General">General</option>
+            <option value="Vivienda">Vivienda / Alquiler</option>
+            <option value="Servicios">Servicios / Luz / Internet</option>
+            <option value="Sueldo">Sueldo / Honorarios</option>
+            <option value="Inversiones">Acciones / Cripto / Plazo Fijo</option>
+            <option value="Alimentacion">Supermercado / Comida</option>
+            <option value="Transporte">Combustible / Transporte</option>
+            <option value="Ocio">Entretenimiento / Varios</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Fecha de Compra / Transacción</label>
+          <input type="date" id="form-date" class="form-input" required>
+        </div>
+
+        <div class="checkbox-group" id="recurring-group">
+          <input type="checkbox" id="form-recurring">
+          <label for="form-recurring">🔁 REPETIR TODOS LOS MESES (Recurrente)</label>
+        </div>
+
+        <button type="submit" class="btn-submit" id="modal-submit-btn">GUARDAR REGISTRO</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    /* Credenciales configuradas */
+    const USER_CORRECTO = "salvarredimartin@gmail.com";
+    const PASS_CORRECTA = "Martin88";
+
+    function checkAuth() {
+      if (sessionStorage.getItem('terminal_auth') === 'true') {
+        document.getElementById('login-overlay').style.display = 'none';
+      } else {
+        document.getElementById('login-overlay').style.display = 'flex';
+      }
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('login-user').value.trim();
+      const p = document.getElementById('login-pass').value;
+
+      if (u === USER_CORRECTO && p === PASS_CORRECTA) {
+        sessionStorage.setItem('terminal_auth', 'true');
+        document.getElementById('login-error').style.display = 'none';
+        checkAuth();
+      } else {
+        document.getElementById('login-error').style.display = 'block';
+      }
+    }
+
+    function logout() {
+      sessionStorage.removeItem('terminal_auth');
+      checkAuth();
+    }
+
+    // Inicializar comprobación de autenticación
+    checkAuth();
+
+    const canvas = document.getElementById('matrix-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const chars = '0123456789ABCDEF$#%&*+-/<>='.$;
+    const fontSize = 12;
+    let columns = Math.floor(canvas.width / fontSize);
+    let drops = Array(columns).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = 'rgba(5, 8, 7, 0.1)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#00ff66';
+      ctx.font = fontSize + 'px monospace';
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = chars.charAt(Math.floor(Math.random() * chars.length));
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+    setInterval(drawMatrix, 50);
+
+    let transactions = JSON.parse(localStorage.getItem('terminal_fin_txs')) || [];
+    
+    const now = new Date();
+    let currentYear = now.getFullYear();
+    let currentMonth = now.getMonth();
+
+    const monthNames = [
+      'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+      'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+    ];
+
+    function updateMonthDisplay() {
+      document.getElementById('current-month-text').innerText = `${monthNames[currentMonth]} ${currentYear}`;
+      
+      const realNow = new Date();
+      if (currentYear === realNow.getFullYear() && currentMonth === realNow.getMonth()) {
+        document.getElementById('month-status-tag').innerText = '● MES EN CURSO';
+        document.getElementById('month-status-tag').style.color = 'var(--text-green)';
+      } else if (currentYear < realNow.getFullYear() || (currentYear === realNow.getFullYear() && currentMonth < realNow.getMonth())) {
+        document.getElementById('month-status-tag').innerText = '◀ MES ANTERIOR';
+        document.getElementById('month-status-tag').style.color = 'var(--text-dim)';
+      } else {
+        document.getElementById('month-status-tag').innerText = '▶ MES FUTURO (PROYECTADO)';
+        document.getElementById('month-status-tag').style.color = 'var(--blue-cyber)';
+      }
+      
+      renderDashboard();
+    }
+
+    function changeMonth(delta) {
+      currentMonth += delta;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      } else if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      updateMonthDisplay();
+    }
+
+    function formatMoney(amount) {
+      return '$' + Number(amount).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function getExpandedTransactionsForSelectedMonth() {
+      let result = [];
+
+      transactions.forEach(tx => {
+        if (!tx.recurring && tx.paymentMethod !== 'tarjeta') {
+          const d = new Date(tx.date + 'T00:00:00');
+          if (d.getFullYear() === currentYear && d.getMonth() === currentMonth) {
+            result.push({
+              ...tx,
+              displayAmount: tx.amount,
+              displayDesc: tx.desc,
+              displayDetail: tx.date
+            });
+          }
+        } else if (tx.recurring) {
+          const txDate = new Date(tx.date + 'T00:00:00');
+          const startKey = txDate.getFullYear() * 12 + txDate.getMonth();
+          const selectedKey = currentYear * 12 + currentMonth;
+
+          if (selectedKey >= startKey) {
+            result.push({
+              ...tx,
+              displayAmount: tx.amount,
+              displayDesc: tx.desc,
+              displayDetail: `🔁 Recurrente (Desde ${tx.date})`
+            });
+          }
+        } else if (tx.paymentMethod === 'tarjeta') {
+          const purchaseDate = new Date(tx.date + 'T00:00:00');
+          const purchaseMonthKey = purchaseDate.getFullYear() * 12 + purchaseDate.getMonth();
+          const selectedMonthKey = currentYear * 12 + currentMonth;
+
+          const firstInstallmentKey = purchaseMonthKey + 1;
+          const installmentsCount = parseInt(tx.installments) || 1;
+          const lastInstallmentKey = firstInstallmentKey + installmentsCount - 1;
+
+          if (selectedMonthKey >= firstInstallmentKey && selectedMonthKey <= lastInstallmentKey) {
+            const currentInstallmentNumber = (selectedMonthKey - firstInstallmentKey) + 1;
+            const installmentAmount = tx.amount / installmentsCount;
+
+            result.push({
+              ...tx,
+              displayAmount: installmentAmount,
+              displayDesc: `${tx.desc} (Cuota ${currentInstallmentNumber}/${installmentsCount})`,
+              displayDetail: `💳 Tarjeta • Compra: ${tx.date}`,
+              isCreditCardInstance: true,
+              currentInstallment: currentInstallmentNumber,
+              totalInstallments: installmentsCount
+            });
+          }
+        }
+      });
+
+      return result;
+    }
+
+    function renderDashboard() {
+      const monthTxs = getExpandedTransactionsForSelectedMonth();
+
+      let totalIngresos = 0;
+      let totalEgresos = 0;
+      let totalInversiones = 0;
+
+      monthTxs.forEach(tx => {
+        const val = parseFloat(tx.displayAmount) || 0;
+        if (tx.type === 'ingreso') totalIngresos += val;
+        if (tx.type === 'egreso') totalEgresos += val;
+        if (tx.type === 'inversion') totalInversiones += val;
+      });
+
+      const disponible = totalIngresos - totalEgresos - totalInversiones;
+
+      document.getElementById('display-disponible').innerText = formatMoney(disponible);
+      document.getElementById('display-ingresos').innerText = formatMoney(totalIngresos);
+      document.getElementById('display-egresos').innerText = formatMoney(totalEgresos);
+      document.getElementById('display-inversiones').innerText = formatMoney(totalInversiones);
+
+      renderTransactionsList(monthTxs);
+      renderRecurringList();
+    }
+
+    function renderTransactionsList(monthTxs) {
+      const listEl = document.getElementById('transactions-list');
+      listEl.innerHTML = '';
+
+      if (monthTxs.length === 0) {
+        listEl.innerHTML = `<div class="empty-state">&gt; NO HAY MOVIMIENTOS APLICABLES EN ESTE MES</div>`;
+        return;
+      }
+
+      monthTxs.forEach(tx => {
+        const card = document.createElement('div');
+        card.className = `item-card type-${tx.type}`;
+
+        const sign = tx.type === 'ingreso' ? '+' : tx.type === 'egreso' ? '-' : '📈';
+        const colorClass = tx.type === 'ingreso' ? 'val-ingreso' : tx.type === 'egreso' ? 'val-egreso' : 'val-inversion';
+
+        card.innerHTML = `
+          <div class="item-info">
+            <div class="item-title">${escapeHtml(tx.displayDesc)}</div>
+            <div class="item-details">
+              <span>${tx.displayDetail}</span>
+              ${tx.paymentMethod === 'tarjeta' ? `<span class="tag-credit">💳 TARJETA</span>` : ''}
+              ${tx.recurring ? `<span class="tag-recurring">🔁 RECURRENTE</span>` : ''}
+            </div>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <div class="item-amount-col">
+              <div class="item-amount ${colorClass}">${sign} ${formatMoney(tx.displayAmount)}</div>
+            </div>
+            <button class="btn-delete" onclick="deleteTransaction('${tx.id}')" title="Eliminar este gasto completo">&times;</button>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    function renderRecurringList() {
+      const listEl = document.getElementById('recurring-list');
+      listEl.innerHTML = '';
+
+      const recurringTxs = transactions.filter(tx => tx.recurring);
+
+      if (recurringTxs.length === 0) {
+        listEl.innerHTML = `<div class="empty-state">&gt; NO HAS CONFIGURADO NINGÚN GASTO O INGRESO RECURRENTE.<br><br>Al registrar un ítem (ej: Alquiler), marca la casilla "Repetir todos los meses".</div>`;
+        return;
+      }
+
+      recurringTxs.forEach(tx => {
+        const card = document.createElement('div');
+        card.className = `item-card type-${tx.type}`;
+        const colorClass = tx.type === 'ingreso' ? 'val-ingreso' : tx.type === 'egreso' ? 'val-egreso' : 'val-inversion';
+
+        card.innerHTML = `
+          <div class="item-info">
+            <div class="item-title">${escapeHtml(tx.desc)} <span class="tag-recurring">FIJO MENSUAL</span></div>
+            <div class="item-details">Desde ${tx.date} • ${escapeHtml(tx.category || 'General')}</div>
+          </div>
+          <div style="display: flex; align-items: center;">
+            <div class="item-amount ${colorClass}">${formatMoney(tx.amount)}</div>
+            <button class="btn-delete" onclick="deleteTransaction('${tx.id}')">&times;</button>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    function selectPaymentMethod(method) {
+      document.getElementById('form-payment-method').value = method;
+      const btnContado = document.getElementById('btn-pay-contado');
+      const btnTarjeta = document.getElementById('btn-pay-tarjeta');
+      const creditPanel = document.getElementById('credit-options-panel');
+      const recurringGroup = document.getElementById('recurring-group');
+
+      if (method === 'contado') {
+        btnContado.className = 'pay-btn selected-contado';
+        btnTarjeta.className = 'pay-btn';
+        creditPanel.classList.remove('active');
+        recurringGroup.style.display = 'flex';
+        document.getElementById('label-amount').innerText = 'Monto ($)';
+      } else {
+        btnContado.className = 'pay-btn';
+        btnTarjeta.className = 'pay-btn selected-tarjeta';
+        creditPanel.classList.add('active');
+        recurringGroup.style.display = 'none';
+        document.getElementById('form-recurring').checked = false;
+        document.getElementById('label-amount').innerText = 'Monto Total de la Compra ($)';
+        updateInstallmentPreview();
+      }
+    }
+
+    function updateInstallmentPreview() {
+      const totalAmount = parseFloat(document.getElementById('form-amount').value) || 0;
+      const count = parseInt(document.getElementById('form-installments').value) || 1;
+      const previewEl = document.getElementById('installment-preview');
+
+      if (totalAmount > 0) {
+        const perInstallment = totalAmount / count;
+        previewEl.innerText = `➜ Son ${count} cuotas de ${formatMoney(perInstallment)} cada una (La 1° cuota se cobra el mes que viene).`;
+      } else {
+        previewEl.innerText = `➜ La 1° cuota se cobrará el mes que viene.`;
+      }
+    }
+
+    document.getElementById('form-amount').addEventListener('input', updateInstallmentPreview);
+
+    function openModal(type) {
+      document.getElementById('form-type').value = type;
+      document.getElementById('transaction-form').reset();
+
+      const defaultDate = new Date();
+      const yyyy = currentYear;
+      const mm = String(currentMonth + 1).padStart(2, '0');
+      const dd = String(Math.min(defaultDate.getDate(), 28)).padStart(2, '0');
+      document.getElementById('form-date').value = `${yyyy}-${mm}-${dd}`;
+
+      const titleEl = document.getElementById('modal-title-text');
+      const submitBtn = document.getElementById('modal-submit-btn');
+      const paymentGroup = document.getElementById('payment-method-group');
+
+      selectPaymentMethod('contado');
+
+      if (type === 'egreso') {
+        paymentGroup.style.display = 'block';
+        titleEl.innerText = '🔻 REGISTRAR EGRESO';
+        titleEl.style.color = 'var(--red-alert)';
+        submitBtn.style.background = 'var(--red-alert)';
+        submitBtn.style.color = '#fff';
+      } else {
+        paymentGroup.style.display = 'none';
+        if (type === 'ingreso') {
+          titleEl.innerText = '⚡ REGISTRAR INGRESO';
+          titleEl.style.color = 'var(--text-green)';
+          submitBtn.style.background = 'var(--text-green)';
+          submitBtn.style.color = '#000';
+        } else {
+          titleEl.innerText = '💎 REGISTRAR INVERSIÓN';
+          titleEl.style.color = 'var(--blue-cyber)';
+          submitBtn.style.background = 'var(--blue-cyber)';
+          submitBtn.style.color = '#000';
+        }
+      }
+
+      document.getElementById('modal-overlay').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.remove('open');
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const type = document.getElementById('form-type').value;
+      const paymentMethod = document.getElementById('form-payment-method').value;
+      const amount = parseFloat(document.getElementById('form-amount').value);
+      const desc = document.getElementById('form-desc').value.trim();
+      const category = document.getElementById('form-category').value;
+      const date = document.getElementById('form-date').value;
+      const recurring = document.getElementById('form-recurring').checked;
+      const installments = parseInt(document.getElementById('form-installments').value) || 1;
+
+      if (!amount || amount <= 0 || !desc || !date) {
+        alert('Por favor completa todos los campos requeridos.');
+        return;
+      }
+
+      const newTx = {
+        id: 'tx_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        type,
+        paymentMethod: type === 'egreso' ? paymentMethod : 'contado',
+        amount,
+        desc,
+        category,
+        date,
+        recurring,
+        installments: paymentMethod === 'tarjeta' ? installments : 1
+      };
+
+      transactions.push(newTx);
+      saveData();
+      closeModal();
+      renderDashboard();
+    }
+
+    function deleteTransaction(id) {
+      if (confirm('¿Eliminar este registro y todas sus cuotas/repeticiones asociadas?')) {
+        transactions = transactions.filter(t => t.id !== id);
+        saveData();
+        renderDashboard();
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem('terminal_fin_txs', JSON.stringify(transactions));
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.section-content').forEach(sec => sec.classList.remove('active'));
+
+      event.target.classList.add('active');
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(transactions, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `terminal_fin_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.readAsText(file, 'UTF-8');
+        reader.onload = readerEvent => {
+          try {
+            const content = JSON.parse(readerEvent.target.result);
+            if (Array.isArray(content)) {
+              transactions = content;
+              saveData();
+              renderDashboard();
+              alert('¡Datos importados con éxito!');
+            }
+          } catch (err) {
+            alert('Error al leer el archivo de copia de seguridad.');
+          }
+        };
+      };
+      input.click();
+    }
+
+    function clearData() {
+      if (confirm('⚠️ ¿ATENCIÓN: Estás seguro de borrar todos tus registros? Esta acción no se puede deshacer.')) {
+        transactions = [];
+        saveData();
+        renderDashboard();
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    updateMonthDisplay();
+  </script>
+</body>
+</html>
